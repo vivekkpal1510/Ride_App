@@ -25,6 +25,9 @@ public class JwtService implements CommandLineRunner {
     @Value("${jwt.secret}")
     private String SECRET ;
 
+    public String createToken(String email) {
+        return createToken(new HashMap<>(), email);
+    }
     public String createToken(Map<String, Object> payload, String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiry*1000L);

@@ -29,6 +29,7 @@ public class SpringSecurity {
 
         return http.
                 csrf(csrf->csrf.disable()).
+                cors(cors->cors.disable()).
                 authorizeHttpRequests(auth->
                         auth
                                 .requestMatchers("/api/v1/auth/signup/*").permitAll()
@@ -58,4 +59,5 @@ public class SpringSecurity {
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
 }

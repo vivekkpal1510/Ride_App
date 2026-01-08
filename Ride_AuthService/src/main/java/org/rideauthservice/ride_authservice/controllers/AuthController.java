@@ -1,10 +1,16 @@
 package org.rideauthservice.ride_authservice.controllers;
 
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.Value;
 import org.rideauthservice.ride_authservice.dto.AuthRequestDto;
+import org.rideauthservice.ride_authservice.dto.AuthResponseDto;
 import org.rideauthservice.ride_authservice.dto.PassengerDto;
 import org.rideauthservice.ride_authservice.dto.PassengerSignupRequestDto;
 import org.rideauthservice.ride_authservice.service.AuthService;
+import org.rideauthservice.ride_authservice.service.JwtService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,28 +21,44 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
 
+    private final JwtService jwtService;
+
     private AuthService authService;
 
-    private AuthController(AuthService authService , AuthenticationManager authenticationManager) {
+    private AuthController(AuthService authService , AuthenticationManager authenticationManager , JwtService jwtService) {
         this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
         this.authService = authService;
     }
     @PostMapping("/signin/passenger")
-    public ResponseEntity<?> signIn(@RequestBody AuthRequestDto authRequestDto) {
-//        System.out.println("Request received " + authRequestDto.getEmail() + " " + authRequestDto.getPassword());
+    public ResponseEntity<?> signIn(@RequestBody AuthRequestDto authRequestDto, HttpServletResponse response) {
+        System.out.println("Request received " + authRequestDto.getEmail() + " " + authRequestDto.getPassword());
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(), authRequestDto.getPassword()));
-        if(authentication.isAuthenticated()){
-            return new ResponseEntity<>("SUCCESS", HttpStatus.OK);
-        }
-           throw   new UsernameNotFoundException("User not found");
-    }
+        if(authentication.isAuthenticated()) {
+            String jwtToken = jwtService.createToken(authRequestDto.getEmail());
 
+            ResponseCookie cookie = ResponseCookie.from("JwtToken", jwtToken)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(7*24*3600)
+                    .build();
+
+            response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            return new ResponseEntity<>(AuthResponseDto.builder().success(true).build(), HttpStatus.OK);
+        } else {
+            throw new UsernameNotFoundException("User not found");
+        }
+    }
     @PostMapping("/signup/passenger")
     public ResponseEntity<?> signUp(@RequestBody PassengerSignupRequestDto passengerSignupRequestDto) {
         PassengerDto response = authService.signUpPassenger(passengerSignupRequestDto);
