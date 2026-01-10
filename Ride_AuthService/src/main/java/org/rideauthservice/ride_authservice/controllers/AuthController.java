@@ -1,5 +1,7 @@
 package org.rideauthservice.ride_authservice.controllers;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Value;
 import org.rideauthservice.ride_authservice.dto.AuthRequestDto;
@@ -16,13 +18,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -32,7 +29,7 @@ public class AuthController {
 
     private final JwtService jwtService;
 
-    private AuthService authService;
+    private final AuthService authService;
 
     private AuthController(AuthService authService , AuthenticationManager authenticationManager , JwtService jwtService) {
         this.authenticationManager = authenticationManager;
@@ -64,4 +61,23 @@ public class AuthController {
         PassengerDto response = authService.signUpPassenger(passengerSignupRequestDto);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/validate")
+    public ResponseEntity<?> Validate(HttpServletRequest request) {
+        System.out.println("Request received " + request.getRequestURI() + " " + request.getQueryString());
+         Cookie[] cookei = request.getCookies();
+         if(cookei != null) {
+             for(Cookie cookie : cookei) {
+                 String cookieName = cookie.getName();
+                 String cookieValue = cookie.getValue();
+                 System.out.println(cookieName + " " + cookieValue);
+                 if(cookie.getName().equals("JwtToken")) {
+                     String jwtToken = cookie.getValue();
+                     return ResponseEntity.status(HttpStatus.OK).build();
+                 }
+             }
+         }
+         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
 }
