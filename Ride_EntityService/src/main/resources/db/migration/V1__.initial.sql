@@ -3,7 +3,7 @@ CREATE TABLE booking
     id             BIGINT AUTO_INCREMENT NOT NULL,
     created_at     datetime NOT NULL,
     updated_at     datetime NOT NULL,
-    booking_status VARCHAR(255) NULL,
+    booking_status ENUM('SCHEDULED','CANCELLED','CAB_ARRIVED','ASSIGNING_DRIVER','IN_RIDE','COMPLETED') NULL,
     start_time     datetime NULL,
     end_time       datetime NULL,
     total_distance BIGINT NULL,
@@ -20,6 +20,7 @@ CREATE TABLE driver
     name           VARCHAR(255) NULL,
     license_number VARCHAR(255) NOT NULL,
     phone_number   VARCHAR(255) NULL,
+    aadhar_card    VARCHAR(255) NULL,
     CONSTRAINT pk_driver PRIMARY KEY (id)
 );
 
@@ -36,7 +37,7 @@ CREATE TABLE passenger
 );
 
 ALTER TABLE driver
-    ADD CONSTRAINT uc_driver_licensenumber UNIQUE (license_number);
+    ADD CONSTRAINT uc_driver_license_number UNIQUE (license_number);
 
 ALTER TABLE booking
     ADD CONSTRAINT FK_BOOKING_ON_DRIVER FOREIGN KEY (driver_id) REFERENCES driver (id);

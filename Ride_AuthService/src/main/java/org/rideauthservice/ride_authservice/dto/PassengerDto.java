@@ -1,7 +1,8 @@
 package org.rideauthservice.ride_authservice.dto;
 
 import lombok.*;
-import org.rideauthservice.ride_authservice.models.Passenger;
+import org.rideauthservice.ride_entityservice.models.Passenger;
+
 
 import java.util.Date;
 

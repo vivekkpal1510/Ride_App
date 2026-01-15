@@ -1,6 +1,6 @@
 package org.rideauthservice.ride_authservice.helpers;
 
-import org.rideauthservice.ride_authservice.models.Passenger;
+import org.rideauthservice.ride_entityservice.models.Passenger;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

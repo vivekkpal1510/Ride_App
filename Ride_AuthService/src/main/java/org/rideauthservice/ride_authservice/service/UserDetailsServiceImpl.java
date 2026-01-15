@@ -1,8 +1,8 @@
 package org.rideauthservice.ride_authservice.service;
 
 import org.rideauthservice.ride_authservice.helpers.AuthPassengerDetails;
-import org.rideauthservice.ride_authservice.models.Passenger;
 import org.rideauthservice.ride_authservice.repositories.PassengerRepository;
+import org.rideauthservice.ride_entityservice.models.Passenger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

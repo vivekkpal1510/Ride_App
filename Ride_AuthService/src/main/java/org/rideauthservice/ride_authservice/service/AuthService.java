@@ -2,8 +2,9 @@ package org.rideauthservice.ride_authservice.service;
 
 import org.rideauthservice.ride_authservice.dto.PassengerDto;
 import org.rideauthservice.ride_authservice.dto.PassengerSignupRequestDto;
-import org.rideauthservice.ride_authservice.models.Passenger;
+
 import org.rideauthservice.ride_authservice.repositories.PassengerRepository;
+import org.rideauthservice.ride_entityservice.models.Passenger;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
