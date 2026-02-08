@@ -27,4 +27,5 @@ public class BookingController {
         return new ResponseEntity<>(bookingService.createBooking(createBookingDto), HttpStatus.CREATED);
     }
 
+
 }
