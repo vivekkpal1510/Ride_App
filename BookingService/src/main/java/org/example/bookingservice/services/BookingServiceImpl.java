@@ -2,6 +2,7 @@ package org.example.bookingservice.services;
 
 
 import org.example.bookingservice.apis.LocationServiceApi;
+import org.example.bookingservice.apis.SocketApi;
 import org.example.bookingservice.dto.*;
 import org.example.bookingservice.repositories.BookingRepository;
 import org.example.bookingservice.repositories.DriverRepository;
@@ -10,7 +11,6 @@ import org.rideauthservice.ride_entityservice.models.Booking;
 import org.rideauthservice.ride_entityservice.models.BookingStatus;
 import org.rideauthservice.ride_entityservice.models.Driver;
 import org.rideauthservice.ride_entityservice.models.Passenger;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import retrofit2.Call;
@@ -30,15 +30,17 @@ public class BookingServiceImpl implements BookingService{
     private final LocationServiceApi locationServiceApi;
     private final DriverRepository driverRepository;
     private final RestTemplate restTemplate;
-
+    private final SocketApi socketApi;
     public BookingServiceImpl(PassengerRepository passengerRepository,
                               BookingRepository bookingRepository ,
                               LocationServiceApi locationServiceApi,
-                              DriverRepository driverRepository) {
+                              DriverRepository driverRepository,
+                              SocketApi socketApi) {
         this.passengerRepository = passengerRepository;
         this.bookingRepository = bookingRepository;
         this.restTemplate = new RestTemplate();
         this.locationServiceApi = locationServiceApi;
+        this.socketApi = socketApi;
         this.driverRepository = driverRepository;
     }
 
@@ -91,6 +93,11 @@ public class BookingServiceImpl implements BookingService{
                     driverLocations.forEach(driverLocationDto -> {
                         System.out.println(driverLocationDto.getDriverId() + " " + "lat: " + driverLocationDto.getLatitude() + "long: " + driverLocationDto.getLongitude());
                     });
+                    try {
+                        raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).build());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
                     System.out.println("Request failed" + response.message());
                 }
@@ -102,5 +109,28 @@ public class BookingServiceImpl implements BookingService{
             }
         });
     }
+    private void raiseRideRequestAsync(RideRequestDto requestDto) throws IOException {
+        Call<Boolean> call = socketApi.raiseRideRequest(requestDto);
+        System.out.println(call.request().url() + " " + call.request().method() + " " + call.request().headers());
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(Call<Boolean> call, Response<Boolean> response) {
+                System.out.println(response.isSuccessful());
+                System.out.println(response.message());
+                if (response.isSuccessful() && response.body() != null) {
+                    Boolean result = response.body();
+                    System.out.println("Driver response is " + result.toString());
+
+                } else {
+                    System.out.println("Request for ride failed " + response.message());
+                }
+            }
+            @Override
+            public void onFailure(Call<Boolean> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
+
 
 }
