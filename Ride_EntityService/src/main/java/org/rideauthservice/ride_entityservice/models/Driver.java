@@ -1,6 +1,8 @@
 package org.rideauthservice.ride_entityservice.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 
 
@@ -31,6 +33,7 @@ public class Driver extends BaseModel{
     private String aadharCard;
 
     @OneToOne(mappedBy = "driver", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private Car car;
 
 

@@ -1,4 +1,6 @@
 package org.rideauthservice.ride_entityservice.models;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,5 +26,6 @@ public class Car extends BaseModel{
     private CarType carType;
 
     @OneToOne
+    @JsonBackReference
     private Driver driver;
 }
