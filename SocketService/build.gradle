@@ -29,9 +29,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:4.1.1'
-    implementation 'org.example:Ride_EntityService:0.0.6-SNAPSHOT'
+    implementation 'org.example:Ride_EntityService:0.0.7-SNAPSHOT'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    // Source: https://mvnrepository.com/artifact/org.springframework.kafka/spring-kafka
+    implementation 'org.springframework.kafka:spring-kafka:3.3.8'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

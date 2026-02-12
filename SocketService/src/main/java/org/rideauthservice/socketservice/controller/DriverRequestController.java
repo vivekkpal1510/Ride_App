@@ -5,6 +5,7 @@ import org.rideauthservice.socketservice.dtos.RideRequestDto;
 import org.rideauthservice.socketservice.dtos.RideResponseDto;
 import org.rideauthservice.socketservice.dtos.UpdateBookingRequestDto;
 import org.rideauthservice.socketservice.dtos.UpdateBookingResponseDto;
+import org.rideauthservice.socketservice.producers.KafkaProducerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -21,15 +22,18 @@ public class DriverRequestController {
 
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final RestTemplate restTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
 
-    public DriverRequestController(SimpMessagingTemplate simpMessagingTemplate) {
+    public DriverRequestController(SimpMessagingTemplate simpMessagingTemplate, KafkaProducerService kafkaProducerService) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.restTemplate = new RestTemplate();
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     @GetMapping
     public Boolean help() {
+        kafkaProducerService.publishMessage("sample-topic", "Hello");
         return true;
     }
 
@@ -56,12 +60,8 @@ public class DriverRequestController {
                 .driverId(Optional.of(Long.parseLong(userId)))
                 .status("SCHEDULED")
                 .build();
-        ResponseEntity<UpdateBookingResponseDto> result = this.restTemplate.postForEntity("http://localhost:8001/api/v1/booking/" + rideResponseDto.bookingId, requestDto, UpdateBookingResponseDto.class);
+        System.out.println("ffff");
+        ResponseEntity<UpdateBookingResponseDto> result = this.restTemplate.postForEntity("http://localhost:8084/api/v1/booking/" + rideResponseDto.bookingId, requestDto, UpdateBookingResponseDto.class);
         System.out.println(result.getStatusCode());
-    }
-    @MessageMapping("/rideResponse")
-    public void fx( RideResponseDto rideResponseDto){
-        System.out.println("herer");
-        System.out.println(rideResponseDto.getResponse());
     }
 }
