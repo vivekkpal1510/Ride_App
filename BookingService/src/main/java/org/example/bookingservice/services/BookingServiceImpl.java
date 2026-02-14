@@ -2,6 +2,7 @@ package org.example.bookingservice.services;
 
 
 import org.example.bookingservice.apis.LocationServiceApi;
+import org.example.bookingservice.apis.PricingApi;
 import org.example.bookingservice.apis.SocketApi;
 import org.example.bookingservice.dto.*;
 import org.example.bookingservice.repositories.BookingRepository;
@@ -11,6 +12,7 @@ import org.rideauthservice.ride_entityservice.models.Booking;
 import org.rideauthservice.ride_entityservice.models.BookingStatus;
 import org.rideauthservice.ride_entityservice.models.Driver;
 import org.rideauthservice.ride_entityservice.models.Passenger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import retrofit2.Call;
@@ -25,6 +27,17 @@ import java.util.Optional;
 @Service
 public class BookingServiceImpl implements BookingService{
 
+    double baseFare = 50;
+    double perKmRate = 12;
+    double perMinuteRate = 2;
+    double minimumFare = 60;
+
+    @Value("${geoapify.apikey}")
+    private String apiKey;
+
+
+    public final PricingApi pricingApi;
+
     private final PassengerRepository passengerRepository;
     private final BookingRepository bookingRepository;
     private final LocationServiceApi locationServiceApi;
@@ -35,7 +48,9 @@ public class BookingServiceImpl implements BookingService{
                               BookingRepository bookingRepository ,
                               LocationServiceApi locationServiceApi,
                               DriverRepository driverRepository,
-                              SocketApi socketApi) {
+                              SocketApi socketApi,
+                              PricingApi pricingApi) {
+        this.pricingApi = pricingApi;
         this.passengerRepository = passengerRepository;
         this.bookingRepository = bookingRepository;
         this.restTemplate = new RestTemplate();
@@ -131,6 +146,42 @@ public class BookingServiceImpl implements BookingService{
             }
         });
     }
+
+
+    private PriceResponseDto getPrice(CreateBookingDto request) throws IOException {
+        String waypoints =
+                request.getStartLocation().getLatitude() + "," + request.getStartLocation().getLongitude()
+                        + "|"
+                        + request.getEndLocation().getLatitude() + "," + request.getEndLocation().getLongitude();
+
+        System.out.println(waypoints);
+        Call<PriceResponseDto> call =
+                pricingApi.getPrice(waypoints, "drive", apiKey);
+
+        return call.execute().body();
+    }
+
+    @Override
+    public Double calculatePrice(CreateBookingDto request) throws IOException {
+
+        PriceResponseDto response = getPrice(request);
+        if(response == null) {
+            // fall backoption if api stop working
+            System.out.println("Request for price failed " + request.toString());
+            return minimumFare;
+        }
+        double distanceMeters = response.getTotalDistance();
+        double timeSeconds = response.getTotalTime();
+        double distanceKm = distanceMeters / 1000.0;
+        double timeMinutes = timeSeconds / 60.0;
+
+        double fare =
+                baseFare
+                        + (distanceKm * perKmRate)
+                        + (timeMinutes * perMinuteRate);
+        return Math.max(fare, minimumFare);
+    }
+
 
 
 }

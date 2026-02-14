@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/v1/booking")
 
@@ -20,9 +22,14 @@ public class BookingController {
     public BookingController(BookingService bookingService) {
         this.bookingService = bookingService;
     }
+
+    @GetMapping
+    public double getPrice(@RequestBody CreateBookingDto request) throws IOException {
+//        System.out.println(request.getStartLatitude() + "," + request.getStartLongitude());
+        return bookingService.calculatePrice(request);
+    }
     @PostMapping
     public ResponseEntity<CreateBookingResponseDto> createBooking(@RequestBody CreateBookingDto createBookingDto) {
-
         return new ResponseEntity<>(bookingService.createBooking(createBookingDto), HttpStatus.CREATED);
     }
 

@@ -4,6 +4,7 @@ package org.example.bookingservice.controllers;
 import com.netflix.discovery.EurekaClient;
 import okhttp3.OkHttpClient;
 import org.example.bookingservice.apis.LocationServiceApi;
+import org.example.bookingservice.apis.PricingApi;
 import org.example.bookingservice.apis.SocketApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -41,6 +42,17 @@ public class RetrofitConfig {
                 .client(new OkHttpClient.Builder().build())
                 .build()
                 .create(SocketApi.class);
+    }
+
+    @Bean
+    public PricingApi pricingServiceApi(){
+        return new Retrofit.Builder()
+                .baseUrl("https://api.geoapify.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(new OkHttpClient.Builder().build())
+                .build()
+                .create(PricingApi.class);
+
     }
 
 }
