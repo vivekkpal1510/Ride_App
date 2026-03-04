@@ -36,6 +36,7 @@ public class AuthController {
         this.jwtService = jwtService;
         this.authService = authService;
     }
+
     @PostMapping("/signin/passenger")
     public ResponseEntity<?> signIn(@RequestBody AuthRequestDto authRequestDto, HttpServletResponse response) {
         System.out.println("Request received " + authRequestDto.getEmail() + " " + authRequestDto.getPassword());
