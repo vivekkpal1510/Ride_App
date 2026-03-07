@@ -31,6 +31,7 @@ public class JwtService implements CommandLineRunner {
     public String createToken(Map<String, Object> payload, String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiry*1000L);
+        System.out.println("creating token");
         return Jwts.builder()
                 .claims(payload)
                 .issuedAt(new Date(System.currentTimeMillis()))
@@ -38,6 +39,7 @@ public class JwtService implements CommandLineRunner {
                 .subject(email)
                 .signWith(getSignKey())
                 .compact();
+
     }
 
     public Claims extractAllPayloads(String token) {
@@ -86,4 +88,5 @@ public class JwtService implements CommandLineRunner {
         System.out.println("Generated token is: " + result);
         System.out.println(extractPayload(result, "email").toString());
     }
+
 }
