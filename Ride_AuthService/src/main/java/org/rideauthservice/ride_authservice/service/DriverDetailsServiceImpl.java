@@ -30,4 +30,15 @@ public class DriverDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("can't find driver " + username);
         }
     }
+
+    public Driver getDriverByEmail(String email) {
+        Optional<Driver> driver = driverReposistory.findDriverByEmail(email);
+        if (driver.isPresent()) {
+            Driver d = driver.get();
+            d.setPassword(null);
+            return d;
+        }
+        return null;
+    }
+
 }

@@ -27,4 +27,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
     }
 
+    public Passenger getPassengerByEmail(String email) {
+        Optional<Passenger> passenger = passengerRepository.findPassengerByEmail(email);
+        if (passenger.isPresent()) {
+            Passenger p = passenger.get();
+            p.setPassword(null);
+            return p;
+        }
+        return null;
+    }
+
 }

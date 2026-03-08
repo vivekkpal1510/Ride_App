@@ -8,4 +8,5 @@ import lombok.*;
 @NoArgsConstructor
 public class AuthResponseDto {
     public Boolean success;
+    public Object user;
 }
