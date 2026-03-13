@@ -34,6 +34,7 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'redis.clients:jedis:5.1.2'
+//	implementation 'org.example:Ride_EntityService:0.0.7-SNAPSHOT'
 	// https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-netflix-eureka-client
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:4.1.1'
 

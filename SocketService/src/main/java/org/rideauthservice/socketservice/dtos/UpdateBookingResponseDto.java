@@ -3,10 +3,6 @@ package org.rideauthservice.socketservice.dtos;
 
 import lombok.*;
 import org.rideauthservice.ride_entityservice.models.BookingStatus;
-import org.rideauthservice.ride_entityservice.models.Car;
-import org.rideauthservice.ride_entityservice.models.Driver;
-
-import java.util.Optional;
 
 @Getter
 @Setter
@@ -22,5 +18,6 @@ public class UpdateBookingResponseDto {
     private String carBrand;
     private String carModel;
     private String phoneNumber;
+    private String otp ;
 
 }

@@ -5,75 +5,93 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.rideauthservice.ride_authservice.service.DriverDetailsServiceImpl;
 import org.rideauthservice.ride_authservice.service.JwtService;
 import org.rideauthservice.ride_authservice.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.*;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Autowired
+    private JwtService jwtService;
+
+    @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
-    private final RequestMatcher uriMatcher =
-            PathPatternRequestMatcher.withDefaults()
-                    .matcher(HttpMethod.GET, "/api/v1/auth/validate");
-
-    private final JwtService jwtService;
-
-    public JwtAuthFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
-    }
+    @Autowired
+    private DriverDetailsServiceImpl driverDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+
+        System.out.println("Incoming request: " + request.getRequestURI());
+
         String token = null;
         if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (cookie.getName().equals("JwtToken")) {
-                    token = cookie.getValue();
+            token = Arrays.stream(request.getCookies())
+                    .filter(cookie -> "JwtToken".equals(cookie.getName()))
+                    .map(Cookie::getValue)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (token != null) {
+            String email = jwtService.extractEmail(token);
+            System.out.println("JWT email: " + email);
+
+            boolean authenticated = false;
+            if (!authenticated){
+                try {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    if (jwtService.validateToken(token, userDetails.getUsername())) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
+                                );
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                        authenticated = true;
+                    }
+                } catch (Exception ignored) {
                 }
             }
-        }
-
-        if (token == null) {
-
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
-        System.out.println("Incoming token" + token);
-
-        String email = jwtService.extractEmail(token);
-
-        System.out.println("Incoming Email" + email);
-
-        if (email != null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-            if (jwtService.validateToken(token, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, null);
-                usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            if (!authenticated) {
+                try {
+                    UserDetails driverDetails = driverDetailsService.loadUserByUsername(email);
+                    if (jwtService.validateToken(token, driverDetails.getUsername())) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(
+                                        driverDetails,
+                                        null,
+                                        driverDetails.getAuthorities()
+                                );
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                        authenticated = true;
+                    }
+                } catch (Exception ignored) {
+                }
             }
+
+        } else {
+            System.out.println("No JWT token found in cookies");
         }
-        System.out.println("Forwarding req");
+
         filterChain.doFilter(request, response);
     }
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        RequestMatcher matcher = new NegatedRequestMatcher(uriMatcher);
-        return matcher.matches(request);
-    }
+
 }

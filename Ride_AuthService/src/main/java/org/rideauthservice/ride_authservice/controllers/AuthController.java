@@ -28,6 +28,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+
 public class AuthController {
 
 
@@ -83,8 +84,9 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<?> Validate(HttpServletRequest request) {
+    public ResponseEntity<?> validate(HttpServletRequest request) {
         System.out.println("Request received " + request.getRequestURI() + " " + request.getQueryString());
+        System.out.println("xxxxxxx");
          Cookie[] cookei = request.getCookies();
          if(cookei != null) {
              for(Cookie cookie : cookei) {
@@ -98,6 +100,8 @@ public class AuthController {
              }
          }
          return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        System.out.println("Request received uuuuuuuu");
+//        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/signup/driver")
