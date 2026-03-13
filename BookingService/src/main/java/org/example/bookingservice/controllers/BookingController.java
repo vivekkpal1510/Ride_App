@@ -1,14 +1,12 @@
 package org.example.bookingservice.controllers;
 
 
-import org.example.bookingservice.dto.CreateBookingDto;
-import org.example.bookingservice.dto.CreateBookingResponseDto;
-import org.example.bookingservice.dto.UpdateBookingRequestDto;
-import org.example.bookingservice.dto.UpdateBookingResponseDto;
+import org.example.bookingservice.dto.*;
 import org.example.bookingservice.services.BookingService;
 import org.rideauthservice.ride_entityservice.models.ExactLocation;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -56,5 +54,15 @@ public class BookingController {
         System.out.println("HELLO WORLD");
         return new ResponseEntity<>(bookingService.updateBooking(requestDto, bookingId), HttpStatus.OK);
     }
+    @PostMapping("/verify")
+    public ResponseEntity<Boolean> verifyOtp(@RequestBody OtpRequestDto otpRequestDto) {
+        System.out.println(otpRequestDto.getOtp());
+        boolean res = bookingService.verifyOtp(otpRequestDto);
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
 
+    @PostMapping("/end/{bookingId}")
+    public void endRide(@PathVariable Long bookingId) {
+        bookingService.endRide(String.valueOf(bookingId));
+    }
 }

@@ -17,6 +17,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -41,14 +42,17 @@ public class BookingServiceImpl implements BookingService {
     private final DriverRepository driverRepository;
     private final RestTemplate restTemplate;
     private final SocketApi socketApi;
+    private final RedisBookingServiceImpl redisBookingService;
 
     public BookingServiceImpl(PassengerRepository passengerRepository,
                               BookingRepository bookingRepository,
                               LocationServiceApi locationServiceApi,
                               DriverRepository driverRepository,
                               SocketApi socketApi,
-                              PricingApi pricingApi) {
+                              PricingApi pricingApi,
+                              RedisBookingServiceImpl redisBookingService) {
         this.pricingApi = pricingApi;
+        this.redisBookingService = redisBookingService;
         this.passengerRepository = passengerRepository;
         this.bookingRepository = bookingRepository;
         this.restTemplate = new RestTemplate();
@@ -75,6 +79,7 @@ public class BookingServiceImpl implements BookingService {
                 .build();
 
         processNearbyDriversAsync(request, bookingDetails.getPassengerId(), newBooking.getId(), bookingDetails.getStartLocation(), bookingDetails.getEndLocation());
+        redisBookingService.addBooking(null,String.valueOf(newBooking.getId()));
         return CreateBookingResponseDto.builder()
                 .bookingId(newBooking.getId())
                 .bookingStatus(newBooking.getBookingStatus().toString())
@@ -83,11 +88,23 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto bookingRequestDto, Long bookingId) {
+        // check if already booked
+        Long driverId = redisBookingService.getDriverId(String.valueOf(bookingId));
+        if(driverId != null) {
+            System.out.println("ALREADY BOOKED ");
+            return null ;
+        }
         System.out.println("HII WORLD");
         Optional<Driver> driver = driverRepository.findById(bookingRequestDto.getDriverId());
         bookingRepository.updateBookingStatusAndDriverById(bookingId, BookingStatus.SCHEDULED, driver.get());
         Optional<Booking> booking = bookingRepository.findById(bookingId);
-
+        SecureRandom random = new SecureRandom();
+        int otp = 100000 + random.nextInt(900000);
+        RedisBookingModel redisBookingModel = RedisBookingModel.builder()
+                .driverId(driver.get().getId())
+                .otp(String.valueOf(otp))
+                .build();
+        redisBookingService.updateBooking(redisBookingModel, String.valueOf(bookingId));
         Long passengerId = booking.get().getPassenger().getId() ;
         UpdateBookingResponseDto res =  UpdateBookingResponseDto.builder()
                 .bookingId(bookingId)
@@ -96,6 +113,7 @@ public class BookingServiceImpl implements BookingService {
                 .carBrand(driver.get().getCar().getBrand())
                 .phoneNumber(driver.get().getPhoneNumber())
                 .driverName(driver.get().getName())
+                .otp(String.valueOf(otp))
                 .build();
         Call<Boolean> call = socketApi.bookingResponseHandler(res, passengerId);
         call.enqueue(new Callback<Boolean>() {
@@ -202,5 +220,18 @@ public class BookingServiceImpl implements BookingService {
         return Math.max(fare, minimumFare);
     }
 
+    @Override
+    public boolean verifyOtp(OtpRequestDto requestDto) {
+        String bookingId = requestDto.getBookingId();
+        String otp = requestDto.getOtp();
+        String otp2 = redisBookingService.getOtp(bookingId);
+        System.out.println(otp2 + " " + otp);
+        return otp.equals(otp2);
+    }
+
+    @Override
+    public void endRide(String id){
+        redisBookingService.deleteBooking(id);
+    }
 
 }

@@ -21,4 +21,5 @@ public class UpdateBookingResponseDto {
     private String carBrand;
     private String carModel;
     private String phoneNumber;
+    private String otp;
 }

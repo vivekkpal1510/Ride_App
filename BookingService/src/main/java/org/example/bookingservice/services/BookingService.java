@@ -1,10 +1,7 @@
 package org.example.bookingservice.services;
 
 
-import org.example.bookingservice.dto.CreateBookingDto;
-import org.example.bookingservice.dto.CreateBookingResponseDto;
-import org.example.bookingservice.dto.UpdateBookingRequestDto;
-import org.example.bookingservice.dto.UpdateBookingResponseDto;
+import org.example.bookingservice.dto.*;
 
 import java.io.IOException;
 
@@ -15,4 +12,6 @@ public interface BookingService {
     UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto bookingRequestDto, Long bookingId);
 
     public Double calculatePrice(CreateBookingDto request) throws IOException;
+    boolean verifyOtp(OtpRequestDto request) ;
+    void endRide(String id);
 }
