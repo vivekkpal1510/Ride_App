@@ -14,8 +14,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/api/socket")
 public class DriverRequestController {
@@ -41,6 +39,7 @@ public class DriverRequestController {
     @CrossOrigin(originPatterns = "*")
     public ResponseEntity<Boolean> raiseRideRequest(@RequestBody RideRequestDto requestDto) {
         System.out.println("request for rides received");
+        System.out.println("requestDto: " + requestDto.getEndLocation().getLatitude());
         sendDriversNewRideRequest(requestDto);
         System.out.println("Req completed");
         return new ResponseEntity<>(Boolean.TRUE, HttpStatus.OK);
@@ -54,14 +53,25 @@ public class DriverRequestController {
 
     @MessageMapping("/rideResponse/{userId}")
     public synchronized void rideResponseHandler(@DestinationVariable String userId, RideResponseDto rideResponseDto) {
-
+        System.out.println("Received ride response: " + rideResponseDto);
         System.out.println(rideResponseDto.getResponse() +" "+userId);
         UpdateBookingRequestDto requestDto = UpdateBookingRequestDto.builder()
-                .driverId(Optional.of(Long.parseLong(userId)))
+                .driverId(Long.parseLong(userId))
                 .status("SCHEDULED")
                 .build();
         System.out.println("ffff");
         ResponseEntity<UpdateBookingResponseDto> result = this.restTemplate.postForEntity("http://localhost:8084/api/v1/booking/" + rideResponseDto.bookingId, requestDto, UpdateBookingResponseDto.class);
         System.out.println(result.getStatusCode());
     }
+
+    @PostMapping("/rideResponse")
+    public synchronized ResponseEntity<Boolean> bookingResponseHandler(
+            @RequestBody UpdateBookingResponseDto responseDto,
+            @RequestParam Long passengerId
+    ) {
+        System.out.println(responseDto.getDriverName() + " sending info to user "+ passengerId);
+        simpMessagingTemplate.convertAndSend("/topic/response/" + passengerId, responseDto);
+        return new ResponseEntity<>(Boolean.TRUE, HttpStatus.OK);
+    }
+
 }

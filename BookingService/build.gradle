@@ -40,7 +40,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
 
-    implementation 'org.example:Ride_EntityService:0.0.7-SNAPSHOT'
+    implementation 'org.example:Ride_EntityService:0.0.8-SNAPSHOT'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     compileOnly 'org.projectlombok:lombok'

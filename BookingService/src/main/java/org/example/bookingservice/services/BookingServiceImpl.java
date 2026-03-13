@@ -8,10 +8,7 @@ import org.example.bookingservice.dto.*;
 import org.example.bookingservice.repositories.BookingRepository;
 import org.example.bookingservice.repositories.DriverRepository;
 import org.example.bookingservice.repositories.PassengerRepository;
-import org.rideauthservice.ride_entityservice.models.Booking;
-import org.rideauthservice.ride_entityservice.models.BookingStatus;
-import org.rideauthservice.ride_entityservice.models.Driver;
-import org.rideauthservice.ride_entityservice.models.Passenger;
+import org.rideauthservice.ride_entityservice.models.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -25,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class BookingServiceImpl implements BookingService{
+public class BookingServiceImpl implements BookingService {
 
     double baseFare = 50;
     double perKmRate = 12;
@@ -44,8 +41,9 @@ public class BookingServiceImpl implements BookingService{
     private final DriverRepository driverRepository;
     private final RestTemplate restTemplate;
     private final SocketApi socketApi;
+
     public BookingServiceImpl(PassengerRepository passengerRepository,
-                              BookingRepository bookingRepository ,
+                              BookingRepository bookingRepository,
                               LocationServiceApi locationServiceApi,
                               DriverRepository driverRepository,
                               SocketApi socketApi,
@@ -66,7 +64,7 @@ public class BookingServiceImpl implements BookingService{
         Booking booking = Booking.builder()
                 .bookingStatus(BookingStatus.ASSIGNING_DRIVER)
                 .startLocation(bookingDetails.getStartLocation())
-//                .endLocation(bookingDetails.getEndLocation())
+                .endLocation(bookingDetails.getEndLocation())
                 .passenger(passenger.get())
                 .build();
         Booking newBooking = bookingRepository.save(booking);
@@ -76,7 +74,7 @@ public class BookingServiceImpl implements BookingService{
                 .longitude(bookingDetails.getStartLocation().getLongitude())
                 .build();
 
-        processNearbyDriversAsync(request, bookingDetails.getPassengerId(), newBooking.getId());
+        processNearbyDriversAsync(request, bookingDetails.getPassengerId(), newBooking.getId(), bookingDetails.getStartLocation(), bookingDetails.getEndLocation());
         return CreateBookingResponseDto.builder()
                 .bookingId(newBooking.getId())
                 .bookingStatus(newBooking.getBookingStatus().toString())
@@ -85,31 +83,51 @@ public class BookingServiceImpl implements BookingService{
 
     @Override
     public UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto bookingRequestDto, Long bookingId) {
-        System.out.println(bookingRequestDto.getDriverId().get());
-        Optional<Driver> driver = driverRepository.findById(bookingRequestDto.getDriverId().get());
-        bookingRepository.updateBookingStatusAndDriverById(bookingId, BookingStatus.SCHEDULED,driver.get());
+        System.out.println("HII WORLD");
+        Optional<Driver> driver = driverRepository.findById(bookingRequestDto.getDriverId());
+        bookingRepository.updateBookingStatusAndDriverById(bookingId, BookingStatus.SCHEDULED, driver.get());
         Optional<Booking> booking = bookingRepository.findById(bookingId);
-        return UpdateBookingResponseDto.builder()
+
+        Long passengerId = booking.get().getPassenger().getId() ;
+        UpdateBookingResponseDto res =  UpdateBookingResponseDto.builder()
                 .bookingId(bookingId)
                 .status(booking.get().getBookingStatus())
-                .driver(Optional.ofNullable(booking.get().getDriver()))
+                .plateNumber(driver.get().getCar().getPlateNumber())
+                .carBrand(driver.get().getCar().getBrand())
+                .phoneNumber(driver.get().getPhoneNumber())
+                .driverName(driver.get().getName())
                 .build();
+        Call<Boolean> call = socketApi.bookingResponseHandler(res, passengerId);
+        call.enqueue(new Callback<Boolean>() {
+            @Override
+            public void onResponse(Call<Boolean> call, Response<Boolean> response) {
+                if (response.isSuccessful()) {
+                    System.out.println("Socket service notified");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Boolean> call, Throwable t) {
+                System.out.println("Socket call failed: " + t.getMessage());
+            }
+        });
+        return res;
     }
 
-    private void processNearbyDriversAsync(NearbyDriversRequestDto requestDto, Long passengerId, Long bookingId) {
+    private void processNearbyDriversAsync(NearbyDriversRequestDto requestDto, Long passengerId, Long bookingId, ExactLocation startLocation, ExactLocation endLocation) {
         Call<DriverLocationDto[]> call = locationServiceApi.getNearbyDrivers(requestDto);
         System.out.println(call.request().url() + " " + call.request().method() + " " + call.request().headers());
 
         call.enqueue(new Callback<DriverLocationDto[]>() {
             @Override
             public void onResponse(Call<DriverLocationDto[]> call, Response<DriverLocationDto[]> response) {
-                if(response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null) {
                     List<DriverLocationDto> driverLocations = Arrays.asList(response.body());
                     driverLocations.forEach(driverLocationDto -> {
                         System.out.println(driverLocationDto.getDriverId() + " " + "lat: " + driverLocationDto.getLatitude() + "long: " + driverLocationDto.getLongitude());
                     });
                     try {
-                        raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).build());
+                        raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).startLocation(startLocation).endLocation(endLocation).build());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -124,6 +142,7 @@ public class BookingServiceImpl implements BookingService{
             }
         });
     }
+
     private void raiseRideRequestAsync(RideRequestDto requestDto) throws IOException {
         Call<Boolean> call = socketApi.raiseRideRequest(requestDto);
         System.out.println(call.request().url() + " " + call.request().method() + " " + call.request().headers());
@@ -140,6 +159,7 @@ public class BookingServiceImpl implements BookingService{
                     System.out.println("Request for ride failed " + response.message());
                 }
             }
+
             @Override
             public void onFailure(Call<Boolean> call, Throwable t) {
                 t.printStackTrace();
@@ -165,7 +185,7 @@ public class BookingServiceImpl implements BookingService{
     public Double calculatePrice(CreateBookingDto request) throws IOException {
 
         PriceResponseDto response = getPrice(request);
-        if(response == null) {
+        if (response == null) {
             // fall backoption if api stop working
             System.out.println("Request for price failed " + request.toString());
             return minimumFare;
@@ -181,7 +201,6 @@ public class BookingServiceImpl implements BookingService{
                         + (timeMinutes * perMinuteRate);
         return Math.max(fare, minimumFare);
     }
-
 
 
 }

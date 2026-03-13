@@ -9,6 +9,7 @@ import org.rideauthservice.ride_entityservice.models.ExactLocation;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class CreateBookingDto {
 
     private Long passengerId;

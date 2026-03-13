@@ -2,6 +2,7 @@ package org.rideauthservice.socketservice.dtos;
 
 
 import lombok.*;
+import org.rideauthservice.socketservice.models.ExactLocation;
 
 import java.util.List;
 
@@ -14,9 +15,9 @@ public class RideRequestDto {
 
     private Long passengerId;
 
-//    private ExactLocation startLocation;
-//
-//    private ExactLocation endLocation;
+    private ExactLocation startLocation;
+
+    private ExactLocation endLocation;
 
     private List<Long> driverIds;
 
